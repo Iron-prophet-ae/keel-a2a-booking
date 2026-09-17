@@ -2,9 +2,9 @@ import {
   OpenAPIRegistry,
   OpenApiGeneratorV31,
 } from "@asteasolutions/zod-to-openapi";
-import { config } from "./config.js";
 import type { ZodTypeAny } from "zod";
 import { z } from "zod";
+import { config } from "./config.js";
 import {
   bookingStatusResponseSchema,
   confirmBookingRequestSchema,
@@ -32,7 +32,7 @@ const apiKey = registry.registerComponent("securitySchemes", "apiKey", {
   type: "apiKey",
   in: "header",
   name: "X-Api-Key",
-  description: "Shared demo key. Default local value is keel-demo-key.",
+  description: "Shared demo key from KEEL_A2A_API_KEY. Local default: keel-demo-key.",
 });
 
 function jsonBody(schema: ZodTypeAny, description: string) {
@@ -51,7 +51,7 @@ registry.registerPath({
   path: "/v1/handshake",
   summary: "Open an A2A booking session",
   description:
-    "A visiting agent identifies itself and why it is calling. Keel returns a session id and the booking capabilities it can honour.",
+    "A visiting agent identifies itself. Keel returns a session id and the capabilities it can honour: intake, slots.propose, bookings.confirm, bookings.get.",
   tags: ["A2A booking"],
   security: [{ [apiKey.name]: [] }],
   request: {
@@ -72,7 +72,7 @@ registry.registerPath({
   path: "/v1/intake",
   summary: "Submit structured intake",
   description:
-    "Collect organisation, contact agent, meeting purpose, duration, and timezone before times are proposed.",
+    "Collect organisation, contact, and meeting purpose/duration/timezone before times are proposed.",
   tags: ["A2A booking"],
   security: [{ [apiKey.name]: [] }],
   request: {
@@ -82,8 +82,8 @@ registry.registerPath({
     },
   },
   responses: {
-    200: jsonBody(intakeResponseSchema, "Intake accepted"),
-    400: jsonBody(errorSchema, "Invalid request or missing session intake"),
+    200: jsonBody(intakeResponseSchema, "Intake ready for slots"),
+    400: jsonBody(errorSchema, "Invalid request or missing session"),
     401: jsonBody(errorSchema, "Missing key or expired session"),
   },
 });
@@ -93,7 +93,7 @@ registry.registerPath({
   path: "/v1/slots/propose",
   summary: "Propose available slots",
   description:
-    "Returns open times from the calendar adapter. v0 uses a mock weekday desk calendar.",
+    "Returns open times from the calendar adapter. v0 uses a mock Sydney weekday desk calendar.",
   tags: ["A2A booking"],
   security: [{ [apiKey.name]: [] }],
   request: {
@@ -127,7 +127,7 @@ registry.registerPath({
     200: jsonBody(confirmBookingResponseSchema, "Booking confirmed"),
     400: jsonBody(errorSchema, "Invalid request"),
     401: jsonBody(errorSchema, "Missing key or expired session"),
-    409: jsonBody(errorSchema, "Slot no longer available"),
+    409: jsonBody(errorSchema, "slot_unavailable"),
   },
 });
 
@@ -155,7 +155,8 @@ export function buildOpenApiDocument() {
       title: "Keel A2A booking desk",
       version: "0.1.0",
       description: [
-        "A visiting agent talks to Keel's booking desk: handshake, intake, propose slots, confirm, then read status.",
+        config.pitch,
+        "A visiting agent talks to Keel's booking desk: handshake, intake, propose slots, confirm, then read status. A2A is the product — not a nicer voice middleman.",
         "Keel public line: Make work move. This API books a conversation. It does not sell a product and does not take payment.",
         `Public site: ${config.publicSite}`,
       ].join("\n\n"),

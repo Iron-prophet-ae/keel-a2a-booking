@@ -1,4 +1,3 @@
-import { createId } from "../lib/ids.js";
 import {
   addCalendarDays,
   addMinutes,
@@ -106,8 +105,4 @@ export class MockCalendarAdapter implements CalendarAdapter {
     const zone = timezone.replace(/[^A-Za-z0-9]/g, "_");
     return `slt_${stamp}_${durationMinutes}_${zone}`;
   }
-}
-
-export function createDemoSlotId(): string {
-  return createId("slot");
 }

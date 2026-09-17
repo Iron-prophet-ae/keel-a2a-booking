@@ -5,6 +5,8 @@ import { MemoryStore } from "../src/store/memory-store.js";
 
 const apiKey = "keel-demo-key";
 const frozenNow = new Date("2026-09-21T00:00:00.000Z");
+const windowStart = "2026-09-21T00:00:00.000Z";
+const windowEnd = "2026-10-03T00:00:00.000Z";
 
 function testApp() {
   return createApp({
@@ -41,83 +43,85 @@ describe("A2A booking happy path", () => {
     const app = testApp();
 
     const handshake = await json(app, "POST", "/v1/handshake", {
-      agent: {
-        id: "visitor-1",
-        name: "Visitor desk",
-        organization: "Northside Plumbing",
-      },
-      purpose: "book-meeting",
+      agent_id: "visitor-1",
+      agent_name: "Visitor desk",
+      org: "Northside Plumbing",
+      purpose: "schedule_meeting",
+      protocol_version: "keel-a2a/0.1",
     });
 
     expect(handshake.status).toBe(200);
-    expect(handshake.body.sessionId).toMatch(/^ses_/);
-    expect(handshake.body.capabilities).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ path: "/v1/intake" }),
-        expect.objectContaining({ path: "/v1/slots/propose" }),
-        expect.objectContaining({ path: "/v1/bookings/confirm" }),
-        expect.objectContaining({ path: "/v1/bookings/{id}" }),
-      ]),
-    );
+    expect(handshake.body.session_id).toMatch(/^ses_/);
+    expect(handshake.body.capabilities).toEqual([
+      "intake",
+      "slots.propose",
+      "bookings.confirm",
+      "bookings.get",
+    ]);
 
-    const sessionId = handshake.body.sessionId as string;
+    const sessionId = handshake.body.session_id as string;
 
     const intake = await json(app, "POST", "/v1/intake", {
-      sessionId,
-      organization: "Northside Plumbing",
-      contactAgentId: "visitor-1",
-      meetingPurpose: "Name the job that is eating the week",
-      durationMinutes: 30,
-      timezone: "Australia/Sydney",
+      session_id: sessionId,
+      org: "Northside Plumbing",
+      contact: { agent_id: "visitor-1", name: "Alex North" },
+      meeting: {
+        purpose: "Name the job that is eating the week",
+        duration_minutes: 30,
+        timezone: "Australia/Sydney",
+      },
     });
 
     expect(intake.status).toBe(200);
-    expect(intake.body.status).toBe("accepted");
+    expect(intake.body.status).toBe("ready_for_slots");
+    expect(intake.body.intake_id).toMatch(/^int_/);
 
     const proposed = await json(app, "POST", "/v1/slots/propose", {
-      sessionId,
-      intakeId: intake.body.intakeId,
+      session_id: sessionId,
+      window_start: windowStart,
+      window_end: windowEnd,
       limit: 3,
     });
 
     expect(proposed.status).toBe(200);
     const slots = proposed.body.slots as Array<{
-      id: string;
+      slot_id: string;
       start: string;
       end: string;
+      timezone: string;
     }>;
     expect(slots.length).toBeGreaterThan(0);
+    expect(slots[0].slot_id).toMatch(/^slt_/);
     expect(new Date(slots[0].end).getTime()).toBeGreaterThan(
       new Date(slots[0].start).getTime(),
     );
 
     const confirm = await json(app, "POST", "/v1/bookings/confirm", {
-      sessionId,
-      slotId: slots[0].id,
-      attendee: { name: "Alex North", email: "alex@northside.example" },
+      session_id: sessionId,
+      slot_id: slots[0].slot_id,
+      attendee_email: "alex@northside.example",
     });
 
     expect(confirm.status).toBe(200);
-    expect(confirm.body.bookingId).toMatch(/^bkg_/);
+    expect(confirm.body.booking_id).toMatch(/^bkg_/);
     expect(confirm.body.status).toBe("confirmed");
     expect(confirm.body.ics).toEqual(
       expect.objectContaining({
-        status: "CONFIRMED",
-        text: expect.stringContaining("BEGIN:VCALENDAR"),
+        uid: expect.any(String),
+        summary: expect.stringContaining("Keel"),
+        dtstart: expect.any(String),
+        dtend: expect.any(String),
       }),
     );
 
     const status = await json(
       app,
       "GET",
-      `/v1/bookings/${confirm.body.bookingId}`,
+      `/v1/bookings/${confirm.body.booking_id}`,
     );
     expect(status.status).toBe(200);
-    expect(status.body.bookingId).toBe(confirm.body.bookingId);
+    expect(status.body.booking_id).toBe(confirm.body.booking_id);
     expect(status.body.status).toBe("confirmed");
-    expect(status.body.meetingPurpose).toBe(
-      "Name the job that is eating the week",
-    );
   });
 
   it("rejects a missing API key and a second lock on the same slot", async () => {
@@ -127,40 +131,52 @@ describe("A2A booking happy path", () => {
       app,
       "POST",
       "/v1/handshake",
-      { agent: { id: "x" }, purpose: "book-meeting" },
+      {
+        agent_id: "x",
+        purpose: "schedule_meeting",
+        protocol_version: "keel-a2a/0.1",
+      },
       "",
     );
     expect(denied.status).toBe(401);
 
     const handshake = await json(app, "POST", "/v1/handshake", {
-      agent: { id: "x" },
-      purpose: "book-meeting",
+      agent_id: "x",
+      purpose: "schedule_meeting",
+      protocol_version: "keel-a2a/0.1",
     });
-    const sessionId = handshake.body.sessionId as string;
+    const sessionId = handshake.body.session_id as string;
     await json(app, "POST", "/v1/intake", {
-      sessionId,
-      organization: "West Workshop",
-      contactAgentId: "x",
-      meetingPurpose: "Cut the chase on approvals",
-      durationMinutes: 15,
-      timezone: "Australia/Melbourne",
+      session_id: sessionId,
+      org: "West Workshop",
+      contact: { agent_id: "x" },
+      meeting: {
+        purpose: "Cut the chase on approvals",
+        duration_minutes: 60,
+        timezone: "Australia/Sydney",
+      },
     });
-    const proposed = await json(app, "POST", "/v1/slots/propose", { sessionId });
-    const slotId = (proposed.body.slots as Array<{ id: string }>)[0].id;
+    const proposed = await json(app, "POST", "/v1/slots/propose", {
+      session_id: sessionId,
+      window_start: windowStart,
+      window_end: windowEnd,
+      limit: 5,
+    });
+    const slotId = (proposed.body.slots as Array<{ slot_id: string }>)[0].slot_id;
 
     const first = await json(app, "POST", "/v1/bookings/confirm", {
-      sessionId,
-      slotId,
+      session_id: sessionId,
+      slot_id: slotId,
     });
     const second = await json(app, "POST", "/v1/bookings/confirm", {
-      sessionId,
-      slotId,
+      session_id: sessionId,
+      slot_id: slotId,
     });
 
     expect(first.status).toBe(200);
     expect(second.status).toBe(409);
     expect(second.body).toMatchObject({
-      error: { code: "SLOT_UNAVAILABLE" },
+      error: { code: "slot_unavailable" },
     });
   });
 });

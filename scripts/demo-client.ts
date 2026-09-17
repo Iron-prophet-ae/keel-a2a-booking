@@ -3,7 +3,7 @@ import { createApp } from "../src/app.js";
 import { config } from "../src/config.js";
 
 const defaultBase = process.env.KEEL_BASE_URL ?? `http://${config.host}:${config.port}`;
-const apiKey = process.env.KEEL_API_KEY ?? config.apiKey;
+const apiKey = process.env.KEEL_A2A_API_KEY ?? config.apiKey;
 
 type Json = Record<string, unknown>;
 
@@ -48,7 +48,7 @@ async function maybeStartLocalServer(): Promise<{
   }
 
   if (process.env.KEEL_BASE_URL) {
-    throw new Error(`No booking desk at ${defaultBase}. Start it with npm run start.`);
+    throw new Error(`No booking desk at ${defaultBase}. Start it with npm start.`);
   }
 
   const { app } = createApp();
@@ -78,66 +78,66 @@ async function runDemo() {
   const { baseUrl, stop } = await maybeStartLocalServer();
   console.log(`Client agent → ${baseUrl}`);
 
+  const windowStart = new Date();
+  const windowEnd = new Date(windowStart.getTime() + 12 * 24 * 60 * 60 * 1000);
+
   try {
     const handshake = await request(baseUrl, "POST", "/v1/handshake", {
-      agent: {
-        id: "demo-visitor-agent",
-        name: "Visitor scheduling desk",
-        organization: "Harbour Joinery",
-      },
-      purpose: "book-meeting",
-      protocolVersion: "1.0",
+      agent_id: "demo-visitor-agent",
+      agent_name: "Visitor scheduling desk",
+      org: "Harbour Joinery",
+      purpose: "schedule_meeting",
+      protocol_version: "keel-a2a/0.1",
     });
-    const sessionId = String(handshake.sessionId);
+    const sessionId = String(handshake.session_id);
     console.log(`handshake  session ${sessionId}`);
-    console.log(
-      `capabilities  ${(handshake.capabilities as Array<{ id: string }>)
-        .map((item) => item.id)
-        .join(", ")}`,
-    );
+    console.log(`capabilities  ${(handshake.capabilities as string[]).join(", ")}`);
 
     const intake = await request(baseUrl, "POST", "/v1/intake", {
-      sessionId,
-      organization: "Harbour Joinery",
-      contactAgentId: "demo-visitor-agent",
-      meetingPurpose: "Map where job intake is leaking hours this week",
-      durationMinutes: 30,
-      timezone: "Australia/Sydney",
-      notes: "Workshop lead wants a next-step plan, not a product pitch.",
+      session_id: sessionId,
+      org: "Harbour Joinery",
+      contact: {
+        name: "Sam Cole",
+        email: "sam@harbourjoinery.example",
+        agent_id: "demo-visitor-agent",
+      },
+      meeting: {
+        purpose: "Map where job intake is leaking hours this week",
+        duration_minutes: 30,
+        timezone: "Australia/Sydney",
+        notes: "Workshop lead wants a next-step plan, not a product pitch.",
+      },
     });
-    console.log(`intake     ${intake.intakeId}`);
+    console.log(`intake     ${intake.intake_id} (${intake.status})`);
 
     const proposed = await request(baseUrl, "POST", "/v1/slots/propose", {
-      sessionId,
-      intakeId: intake.intakeId,
+      session_id: sessionId,
+      window_start: windowStart.toISOString(),
+      window_end: windowEnd.toISOString(),
       limit: 5,
     });
-    const slots = proposed.slots as Array<{ id: string; start: string }>;
+    const slots = proposed.slots as Array<{ slot_id: string; start: string }>;
     if (!slots.length) {
       throw new Error("Desk returned no slots.");
     }
-    console.log(`propose    ${slots.length} slots; taking ${slots[0].id}`);
+    console.log(`propose    ${slots.length} slots; taking ${slots[0].slot_id}`);
 
     const booking = await request(baseUrl, "POST", "/v1/bookings/confirm", {
-      sessionId,
-      slotId: slots[0].id,
-      intakeId: intake.intakeId,
-      attendee: {
-        name: "Sam Cole",
-        email: "sam@harbourjoinery.example",
-      },
+      session_id: sessionId,
+      slot_id: slots[0].slot_id,
+      attendee_email: "sam@harbourjoinery.example",
     });
 
     const status = await request(
       baseUrl,
       "GET",
-      `/v1/bookings/${booking.bookingId}`,
+      `/v1/bookings/${booking.booking_id}`,
     );
 
-    console.log(`confirm    booking ${booking.bookingId}`);
+    console.log(`confirm    booking ${booking.booking_id}`);
     console.log(`status     ${status.status}`);
     console.log(`ics uid    ${(booking.ics as { uid: string }).uid}`);
-    console.log(String(booking.bookingId));
+    console.log(String(booking.booking_id));
   } finally {
     stop?.();
   }

@@ -29,7 +29,7 @@ export function renderStatusPage(bookings: BookingRecord[]): string {
         <tr>
           <td><code>${escapeHtml(booking.id)}</code></td>
           <td><span class="pill">${escapeHtml(booking.status)}</span></td>
-          <td>${escapeHtml(booking.organization)}</td>
+          <td>${escapeHtml(booking.org)}</td>
           <td>${escapeHtml(booking.meetingPurpose)}</td>
           <td>${escapeHtml(formatWhen(booking.start, booking.timezone))}</td>
         </tr>`,
@@ -62,10 +62,17 @@ export function renderStatusPage(bookings: BookingRecord[]): string {
       line-height: 1.5;
     }
     main { max-width: 960px; margin: 0 auto; padding: 32px 20px 64px; }
-    p, td, th, .lede { font-family: "Segoe UI", system-ui, sans-serif; }
+    p, td, th, .lede, blockquote { font-family: "Segoe UI", system-ui, sans-serif; }
     .kicker { letter-spacing: 0.08em; text-transform: uppercase; font-size: 12px; color: var(--accent); font-family: "Segoe UI", system-ui, sans-serif; }
     h1 { font-size: clamp(32px, 5vw, 48px); font-weight: 500; margin: 8px 0 12px; }
     .lede { color: var(--muted); max-width: 42rem; }
+    blockquote {
+      margin: 20px 0;
+      padding: 12px 16px;
+      border-left: 3px solid var(--accent);
+      color: var(--ink);
+      max-width: 40rem;
+    }
     .meta { display: flex; gap: 16px; flex-wrap: wrap; margin: 24px 0 28px; color: var(--muted); font-size: 14px; }
     table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); }
     th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: top; font-size: 14px; }
@@ -75,15 +82,20 @@ export function renderStatusPage(bookings: BookingRecord[]): string {
     code { font-size: 12px; }
     a { color: var(--accent); }
     footer { margin-top: 28px; color: var(--muted); font-size: 14px; }
+    @media (max-width: 640px) {
+      table { display: block; overflow-x: auto; }
+      th, td { font-size: 13px; }
+    }
   </style>
 </head>
 <body>
   <main>
     <p class="kicker">Keel · booking desk</p>
     <h1>${escapeHtml(config.product.tagline)}</h1>
+    <blockquote>${escapeHtml(config.pitch)}</blockquote>
     <p class="lede">
-      A visiting agent talks to this desk: handshake, intake, proposed times, then a held slot.
-      This page is a demo board of recent bookings — not the public site.
+      Agent schedules with agent. This desk holds a time after handshake, intake, proposed slots, and confirm.
+      This page is a demo board — not the public site.
     </p>
     <div class="meta">
       <span>Last ${bookings.length} of ${config.recentBookingLimit} shown</span>

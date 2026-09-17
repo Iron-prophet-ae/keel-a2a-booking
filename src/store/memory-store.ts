@@ -4,8 +4,8 @@ export type SessionRecord = {
   id: string;
   agentId: string;
   agentName: string;
-  organization?: string;
-  purpose: string;
+  org?: string;
+  purpose: "schedule_meeting";
   createdAt: string;
   expiresAt: string;
 };
@@ -13,30 +13,29 @@ export type SessionRecord = {
 export type IntakeRecord = {
   id: string;
   sessionId: string;
-  organization: string;
+  org: string;
+  contactName?: string;
+  contactEmail?: string;
   contactAgentId: string;
   meetingPurpose: string;
-  durationMinutes: number;
+  durationMinutes: 30 | 60 | 90;
   timezone: string;
   notes?: string;
   createdAt: string;
 };
-
-export type BookingStatus = "confirmed" | "cancelled";
 
 export type BookingRecord = {
   id: string;
   sessionId: string;
   intakeId: string;
   slotId: string;
-  status: BookingStatus;
-  organization: string;
+  status: "confirmed";
+  org: string;
   contactAgentId: string;
   meetingPurpose: string;
   timezone: string;
   start: string;
   end: string;
-  attendeeName?: string;
   attendeeEmail?: string;
   icsUid: string;
   createdAt: string;

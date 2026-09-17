@@ -89,7 +89,7 @@ export function createApp(options: CreateAppOptions = {}) {
         {
           error: {
             code: "UNAUTHORIZED",
-            message: "Send a valid X-Api-Key header.",
+            message: "Send a valid X-Api-Key header (KEEL_A2A_API_KEY).",
           },
         },
         401,
