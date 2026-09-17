@@ -14,6 +14,7 @@ function testApp() {
     calendar: new MockCalendarAdapter({ now: frozenNow }),
     now: frozenNow,
     apiKey,
+    artifactsDir: "/tmp/keel-ics-test",
   }).app;
 }
 

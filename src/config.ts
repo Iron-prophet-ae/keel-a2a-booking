@@ -1,7 +1,8 @@
 export const config = {
   port: Number(process.env.PORT ?? 47821),
-  host: process.env.HOST ?? "127.0.0.1",
+  host: process.env.HOST ?? (process.env.PORT ? "0.0.0.0" : "127.0.0.1"),
   apiKey: process.env.KEEL_A2A_API_KEY ?? "keel-demo-key",
+  namedHost: "https://a2a.keelops.au",
   publicSite: process.env.KEEL_PUBLIC_SITE ?? "https://keelops.au",
   sessionTtlMs: 60 * 60 * 1000,
   recentBookingLimit: 20,

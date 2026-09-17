@@ -1,10 +1,13 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { authorizeKey, loadKeyRing } from "./auth/keys.js";
 import type { CalendarAdapter } from "./calendar/adapter.js";
-import { MockCalendarAdapter } from "./calendar/mock-adapter.js";
+import { createCalendarFromEnv } from "./calendar/create.js";
+import { CalendarCredentialsError } from "./calendar/errors.js";
 import { config } from "./config.js";
 import type { AppBindings } from "./context.js";
 import { ApiError } from "./http.js";
+import { deliverConfirmation } from "./notify/confirm-out.js";
 import { buildOpenApiDocument } from "./openapi.js";
 import { renderDocsPage } from "./pages/docs.js";
 import { renderStatusPage } from "./pages/status.js";
@@ -21,12 +24,21 @@ export type CreateAppOptions = {
   calendar?: CalendarAdapter;
   now?: Date;
   apiKey?: string;
+  apiKeys?: string[];
+  keyMap?: Record<string, string>;
+  webhookUrl?: string;
+  artifactsDir?: string;
+  fetchImpl?: typeof fetch;
 };
 
 export function createApp(options: CreateAppOptions = {}) {
   const store = options.store ?? new MemoryStore();
-  const calendar = options.calendar ?? new MockCalendarAdapter();
-  const apiKey = options.apiKey ?? config.apiKey;
+  const calendar = options.calendar ?? createCalendarFromEnv();
+  const ring = loadKeyRing({
+    apiKey: options.apiKey,
+    apiKeys: options.apiKeys,
+    keyMap: options.keyMap,
+  });
   const app = new Hono<AppBindings>();
 
   app.use("*", cors());
@@ -34,6 +46,13 @@ export function createApp(options: CreateAppOptions = {}) {
     c.set("store", store);
     c.set("calendar", calendar);
     c.set("now", options.now ?? new Date());
+    c.set("onConfirmed", async (payload, icsText) => {
+      await deliverConfirmation(payload, icsText, {
+        webhookUrl: options.webhookUrl,
+        artifactsDir: options.artifactsDir,
+        fetchImpl: options.fetchImpl,
+      });
+    });
     await next();
   });
 
@@ -42,6 +61,12 @@ export function createApp(options: CreateAppOptions = {}) {
       return c.json(
         { error: { code: error.code, message: error.message } },
         error.status as 400,
+      );
+    }
+    if (error instanceof CalendarCredentialsError) {
+      return c.json(
+        { error: { code: "calendar_credentials", message: error.message } },
+        503,
       );
     }
     console.error(error);
@@ -61,6 +86,7 @@ export function createApp(options: CreateAppOptions = {}) {
       ok: true,
       product: config.product.name,
       tagline: config.product.tagline,
+      calendar: calendar.kind,
     }),
   );
 
@@ -84,12 +110,12 @@ export function createApp(options: CreateAppOptions = {}) {
       return;
     }
     const provided = c.req.header("x-api-key");
-    if (!provided || provided !== apiKey) {
+    if (!authorizeKey(ring, provided)) {
       return c.json(
         {
           error: {
             code: "UNAUTHORIZED",
-            message: "Send a valid X-Api-Key header (KEEL_A2A_API_KEY).",
+            message: "Send a valid X-Api-Key header (KEEL_A2A_API_KEY or KEEL_A2A_API_KEYS).",
           },
         },
         401,
@@ -99,5 +125,5 @@ export function createApp(options: CreateAppOptions = {}) {
   });
 
   app.route("/v1", v1);
-  return { app, store, calendar };
+  return { app, store, calendar, ring };
 }

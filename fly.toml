@@ -1,0 +1,33 @@
+# Always-on Keel A2A booking desk.
+# Named host after Squarespace CNAME: https://a2a.keelops.au
+# Do not point apex MX/TXT/NS here.
+
+app = "keel-a2a-booking"
+primary_region = "syd"
+
+[build]
+
+[env]
+  HOST = "0.0.0.0"
+  PORT = "47821"
+  CALENDAR_PROVIDER = "mock"
+  KEEL_PUBLIC_SITE = "https://keelops.au"
+  KEEL_A2A_KEY_FILE = "/data/keel-api-key"
+  ICS_ARTIFACTS_DIR = "/data/artifacts"
+
+[http_service]
+  internal_port = 47821
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1
+
+[mounts]
+  source = "keel_a2a_data"
+  destination = "/data"

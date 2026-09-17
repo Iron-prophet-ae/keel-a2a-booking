@@ -21,10 +21,13 @@ This repo does not sell a product, does not sell AI, and does not quote prices.
 | A2A HTTP JSON API | `src/routes/v1.ts` |
 | OpenAPI 3.1 | `GET /openapi.json` and `GET /docs` |
 | Booking-desk persona + tool bindings | `src/agent/PERSONA.md`, `GET /v1/agent` |
-| Mock calendar + `CalendarAdapter` | `src/calendar/` (Sydney weekday hours) |
-| In-memory store | `src/store/memory-store.ts` |
+| Mock calendar + Motion/Cal.com stubs | `src/calendar/` (`CALENDAR_PROVIDER`) |
+| Multi-key auth | `KEEL_A2A_API_KEY`, `KEEL_A2A_API_KEYS`, keys file |
+| Confirmation out | webhook + `artifacts/{booking_id}.ics` |
 | Demo client agent | `scripts/demo-client.ts` (`npm run demo`) |
 | Thin status board | `GET /` |
+| Agent install card | `docs/AGENT_INSTALL.md` |
+| Sticky deploy pack | `Dockerfile`, `fly.toml`, `DEPLOY.md` |
 
 ## Run locally
 
@@ -56,13 +59,21 @@ npm run dev
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `KEEL_A2A_API_KEY` | `keel-demo-key` | Shared demo key (`X-Api-Key`) |
+| `KEEL_A2A_API_KEY` | generated into `.data/keel-api-key` if unset | Single `X-Api-Key` (backward compatible) |
+| `KEEL_A2A_API_KEYS` | unset | Extra keys, comma-separated |
+| `KEEL_A2A_API_KEYS_FILE` | unset | JSON `{customer_id: key}` or `customer_id=key` lines |
+| `KEEL_A2A_KEY_FILE` | `.data/keel-api-key` | Where a generated key is persisted |
+| `CALENDAR_PROVIDER` | `mock` | `mock` \| `motion` \| `calcom` (fails loud without creds) |
+| `BOOKING_WEBHOOK_URL` | unset | POST booking payload on confirm |
+| `SMTP_URL` | unset | Reserved; send is skipped when unset |
 | `PORT` | `47821` | Listen port |
-| `HOST` | `127.0.0.1` | Bind address |
+| `HOST` | `127.0.0.1` (or `0.0.0.0` if `PORT` is set by a host) | Bind address |
 | `KEEL_PUBLIC_SITE` | `https://keelops.au` | Public site in copy |
 | `KEEL_BASE_URL` | `http://127.0.0.1:47821` | Demo client target |
 
-Do not commit `.env`. `.env.example` is the template.
+Do not commit `.env` or `.data/`. `.env.example` is the template.
+
+Named host (after DNS): **https://a2a.keelops.au**. Deploy steps and the Squarespace row: `DEPLOY.md`. Foreign-agent install: `docs/AGENT_INSTALL.md`.
 
 ## Demo client (proves A2A without a UI)
 
@@ -135,13 +146,13 @@ curl -sS "$BASE/v1/bookings/BOOKING_ID" -H "X-Api-Key: $KEY"
 3. Only confirm a `slot_id` from the latest propose response.
 4. On `409` / `slot_unavailable`, propose again.
 
-Auth is a **shared demo API key** (`KEEL_A2A_API_KEY`), not production OAuth.
+Auth is `X-Api-Key`: one `KEEL_A2A_API_KEY`, or any key in `KEEL_A2A_API_KEYS` / the keys file. Not production OAuth.
 
 ## Calendar adapter
 
-v0 uses `MockCalendarAdapter`: weekday 09:00–16:00 in the requested timezone (Sydney hours for the demo).
+Default is `MockCalendarAdapter`: weekday 09:00–16:00 (Sydney hours for the demo).
 
-Plug a real calendar later by implementing `CalendarAdapter` in `src/calendar/adapter.ts` (`propose`, `getSlot`, `reserve`) and passing it into `createApp({ calendar })`. Motion / Cal.com OAuth is out of scope. A later human Motion sink can sit behind the adapter without changing [keelops.au](https://keelops.au).
+`CALENDAR_PROVIDER=motion|calcom` loads a stub that **fails loud** without `MOTION_API_KEY` / `CALCOM_API_KEY`. Do not invent those tokens. See `DEPLOY.md` for the human steps. Motion / Cal.com OAuth stays out of scope until secrets exist. Do not change [keelops.au](https://keelops.au).
 
 ## Tests
 
@@ -149,11 +160,11 @@ Plug a real calendar later by implementing `CalendarAdapter` in `src/calendar/ad
 npm test
 ```
 
-Covers the handshake→book happy path, API key rejection, double-book `slot_unavailable`, and OpenAPI path list.
+Covers handshake→book, conflict, multi-key auth, webhook + ICS artifact, and OpenAPI paths.
 
 ## Deploy notes
 
-Run as a long-lived Node process (`npm start`) behind any TLS terminator. Set `KEEL_A2A_API_KEY` and bind `HOST=0.0.0.0` if you need a public interface. Memory store resets on process restart. Production calendar OAuth and stronger auth are later work.
+Always-on pack: `Dockerfile`, `fly.toml`, `docker-compose.yml`. Full steps and the Squarespace `a2a` CNAME row: **`DEPLOY.md`**. Named host: `https://a2a.keelops.au`. Memory store resets unless the process stays up.
 
 ## Acceptance checklist
 

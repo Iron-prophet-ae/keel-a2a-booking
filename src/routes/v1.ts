@@ -119,7 +119,10 @@ v1.post(
       createdAt: c.get("now").toISOString(),
     });
 
-    return c.json(toBookingResponse(booking));
+    const presented = toBookingResponse(booking);
+    await c.get("onConfirmed")(presented, presented.ics_text);
+    const { ics_text: _icsText, ...response } = presented;
+    return c.json(response);
   },
 );
 
@@ -128,7 +131,8 @@ v1.get("/bookings/:id", (c) => {
   if (!booking) {
     throw new ApiError(404, "booking_not_found", "No booking with that id.");
   }
-  return c.json(toBookingResponse(booking));
+  const { ics_text: _icsText, ...response } = toBookingResponse(booking);
+  return c.json(response);
 });
 
 function requireSession(store: MemoryStore, sessionId: string) {
@@ -185,5 +189,6 @@ function toBookingResponse(booking: BookingRecord) {
       dtstart: ics.dtstart,
       dtend: ics.dtend,
     },
+    ics_text: ics.text,
   };
 }

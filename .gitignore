@@ -1,6 +1,8 @@
 node_modules
 dist
 .env
+.data
+artifacts/*.ics
 .DS_Store
 coverage
 *.log

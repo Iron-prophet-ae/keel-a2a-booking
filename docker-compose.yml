@@ -1,0 +1,21 @@
+services:
+  desk:
+    build: .
+    ports:
+      - "47821:47821"
+    env_file:
+      - .env
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "47821"
+      CALENDAR_PROVIDER: mock
+      KEEL_A2A_KEY_FILE: /app/.data/keel-api-key
+      ICS_ARTIFACTS_DIR: /app/artifacts
+    restart: unless-stopped
+    volumes:
+      - keel-data:/app/.data
+      - keel-artifacts:/app/artifacts
+
+volumes:
+  keel-data:
+  keel-artifacts:
