@@ -141,7 +141,7 @@ Auth is a **shared demo API key** (`KEEL_A2A_API_KEY`), not production OAuth.
 
 v0 uses `MockCalendarAdapter`: weekday 09:00–16:00 in the requested timezone (Sydney hours for the demo).
 
-Plug a real calendar later by implementing `CalendarAdapter` in `src/calendar/adapter.ts` (`propose`, `getSlot`, `reserve`) and passing it into `createApp({ calendar })`. Motion / Cal.com OAuth is out of scope. A later human Motion sink can exist without changing the public marketing site.
+Plug a real calendar later by implementing `CalendarAdapter` in `src/calendar/adapter.ts` (`propose`, `getSlot`, `reserve`) and passing it into `createApp({ calendar })`. Motion / Cal.com OAuth is out of scope. A later human Motion sink can sit behind the adapter without changing [keelops.au](https://keelops.au).
 
 ## Tests
 

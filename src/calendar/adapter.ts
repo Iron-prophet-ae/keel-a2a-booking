@@ -2,6 +2,9 @@
  * Pluggable calendar. v0 ships MockCalendarAdapter.
  * A later adapter can talk to Motion, Cal.com, or Google Calendar
  * without changing the A2A routes.
+ *
+ * Later human Motion sink (do not wire in v0; do not change keelops.au):
+ * https://app.usemotion.com/meet/simon-hand/keel-audit
  */
 export type TimeSlot = {
   id: string;
