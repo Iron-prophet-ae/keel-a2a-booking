@@ -16,12 +16,27 @@ Money direction (not a SKU, no pricing UI): cheap easy fix, one-time about $5, v
 | `fly.toml` | Fly.io, `min_machines_running = 1`, volume for key + ICS |
 | `railway.json` | Railway Dockerfile deploy |
 | `docker-compose.yml` | Any VPS |
+| `vercel.json` + `api/index.ts` | Vercel (`npx vercel --prod`) |
 
 `KEEL_A2A_API_KEY` is read from env. If missing, the process generates one and writes it to `KEEL_A2A_KEY_FILE` (default `.data/keel-api-key`). Never commit that file or `.env`.
 
-## Fly (Iron Bars — this is the sticky path)
+## Vercel (Iron Bars box — `npx vercel whoami` = simonhand-8259)
 
-This VM has **no Fly/Vercel/Railway token**. Sticky URL proof waits on:
+From a clone of this repo on your box:
+
+```bash
+git clone https://github.com/Client-Care/keel-a2a-booking.git
+cd keel-a2a-booking
+npx vercel --prod
+npx vercel env add KEEL_A2A_API_KEY
+npx vercel domains add a2a.keelops.au
+```
+
+Start command if Vercel asks: `npm start` (`tsx src/index.ts`). The `api/index.ts` handler covers the serverless path. Set `CALENDAR_PROVIDER=mock` until Motion secrets exist. Memory is per-isolate on Vercel — Fly/Docker is the always-on process if you need sticky in-memory bookings.
+
+## Fly (always-on process)
+
+This agent VM has **no Fly/Vercel token**. On a logged-in box:
 
 ```bash
 fly auth login
