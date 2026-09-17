@@ -75,7 +75,7 @@ npm run dev
 
 Do not commit `.env` or `.data/`. `.env.example` is the template.
 
-Named host (after DNS): **https://a2a.keelops.au**. Deploy steps and the Squarespace row: `DEPLOY.md`. Foreign-agent install: `docs/AGENT_INSTALL.md`.
+Named host: **https://a2a.keelops.au**. Deploy: `DEPLOY.md`. Vercel from Iron Bars box: `npx vercel --prod` (start: `npm start`). Foreign-agent install: `docs/AGENT_INSTALL.md`. GitHub: `https://github.com/Client-Care/keel-a2a-booking`
 
 ## Demo client (proves A2A without a UI)
 
