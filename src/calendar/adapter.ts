@@ -1,10 +1,10 @@
 /**
  * Pluggable calendar. v0 ships MockCalendarAdapter.
- * A later adapter can talk to Motion, Cal.com, or Google Calendar
- * without changing the A2A routes.
+ * Next calendar is Motion (not Cal.com/Google unless Motion is blocked).
+ * Do not invent MOTION_API_KEY. Fail loud if CALENDAR_PROVIDER=motion
+ * without credentials. Do not change keelops.au.
  *
- * Later human Motion sink (do not wire in v0; do not change keelops.au):
- * https://app.usemotion.com/meet/simon-hand/keel-audit
+ * Human Motion sink: https://app.usemotion.com/meet/simon-hand/keel-audit
  */
 export type TimeSlot = {
   id: string;

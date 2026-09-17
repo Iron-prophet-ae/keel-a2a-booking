@@ -1,10 +1,12 @@
 # Deploy the Keel A2A desk (sticky host)
 
-Target name: **https://a2a.keelops.au**
+Target name (locked): **https://a2a.keelops.au**
 
-Do not change [keelops.au](https://keelops.au) marketing copy, apex MX/TXT, or nameservers. This is a **subdomain only**.
+Do not change [keelops.au](https://keelops.au) marketing copy, apex MX/TXT, or nameservers. Subdomain only.
 
 > If I'm going to have to talk to a clearly AI voice bot, why bother talking… just get your agents to do the talking.
+
+Money direction (not a SKU, no pricing UI): cheap easy fix, one-time about $5, volume play. No invented packages.
 
 ## Always-on pack in this repo
 
@@ -17,7 +19,9 @@ Do not change [keelops.au](https://keelops.au) marketing copy, apex MX/TXT, or n
 
 `KEEL_A2A_API_KEY` is read from env. If missing, the process generates one and writes it to `KEEL_A2A_KEY_FILE` (default `.data/keel-api-key`). Never commit that file or `.env`.
 
-## Fly (preferred once Iron Bars is logged in)
+## Fly (Iron Bars — this is the sticky path)
+
+This VM has **no Fly/Vercel/Railway token**. Sticky URL proof waits on:
 
 ```bash
 fly auth login
@@ -25,32 +29,14 @@ fly apps create keel-a2a-booking
 fly volumes create keel_a2a_data --region syd --size 1
 fly secrets set KEEL_A2A_API_KEY="(generate; do not commit)"
 fly deploy
+fly certs add a2a.keelops.au
 ```
 
-Public app hostname after create: `https://keel-a2a-booking.fly.dev`
-
-## Railway
-
-```bash
-railway login
-railway up
-railway variables set KEEL_A2A_API_KEY="(generate; do not commit)"
-```
-
-## VPS + compose
-
-```bash
-cp .env.example .env   # set KEEL_A2A_API_KEY
-docker compose up -d --build
-```
-
-Point `a2a` at the VPS IPv4 with an A record (below).
+Until then the intended app hostname is `https://keel-a2a-booking.fly.dev`. After the Squarespace row + cert: `https://a2a.keelops.au`.
 
 ## Squarespace DNS — exact row for Iron Prophet
 
 Add **one** record. Leave `@`, MX, TXT (mail), and nameservers untouched.
-
-**If the durable host is Fly** (`keel-a2a-booking.fly.dev`):
 
 | Field | Value |
 | --- | --- |
@@ -59,38 +45,25 @@ Add **one** record. Leave `@`, MX, TXT (mail), and nameservers untouched.
 | Data | `keel-a2a-booking.fly.dev` |
 | TTL | Squarespace default (often 4 hours) |
 
-**If the durable host is a VPS** (replace with the real IPv4):
+In Fly: add custom domain `a2a.keelops.au` and wait for HTTPS.
 
-| Field | Value |
-| --- | --- |
-| Type | `A` |
-| Host | `a2a` |
-| Data | `<VPS IPv4>` |
-| TTL | Squarespace default |
+VPS fallback only if Fly is unavailable: Type `A`, Host `a2a`, Data `<VPS IPv4>`.
 
-**If the durable host is Vercel** (after `vercel --prod`):
+## Calendar — Motion first (stopped: no secrets on this VM)
 
-| Field | Value |
-| --- | --- |
-| Type | `CNAME` |
-| Host | `a2a` |
-| Data | `cname.vercel-dns.com` |
-| TTL | Squarespace default |
+`MOTION_API_KEY` / Motion OAuth are **unset**. Calendar stays `CALENDAR_PROVIDER=mock`. Wiring to live free/busy is **stopped** until Iron Prophet adds a real key. Do not invent tokens. Do not switch to Cal.com or Google unless Motion itself is blocked.
 
-Then in the host dashboard add custom domain `a2a.keelops.au` and complete HTTPS.
+### Exact steps for Iron Prophet
 
-## Calendar (human secrets)
+1. Open Motion (same workspace as the human booking page). Do **not** change [keelops.au](https://keelops.au).
+2. Human sink (unchanged): https://app.usemotion.com/meet/simon-hand/keel-audit
+3. Motion → **Settings → API** → create an API key (or OAuth app if Motion requires it for availability).
+4. Hand the key to Iron Bars as a **host secret only** (Fly: `fly secrets set MOTION_API_KEY=…`). Never commit it.
+5. Set `CALENDAR_PROVIDER=motion` on the host.
+6. Reply in this repo when the secret is on the host. Then we map Motion availability → `slots.propose` / `bookings.confirm`.
 
-No Motion / Cal.com / Google tokens are in this VM. The desk stays on `CALENDAR_PROVIDER=mock`.
-
-Iron Prophet, when secrets exist:
-
-1. Motion: Settings → API → create key → set `MOTION_API_KEY` and `CALENDAR_PROVIDER=motion` on the host. Do not invent a key. Human page (unchanged marketing site): https://app.usemotion.com/meet/simon-hand/keel-audit
-2. Cal.com: Settings → API keys → create key → set `CALCOM_API_KEY` and `CALENDAR_PROVIDER=calcom`.
-3. Google free/busy: OAuth client + refresh token. Not wired until those exist.
-
-Adapters **fail loud** if the provider is set without credentials.
+Until step 6, mock weekday Sydney hours stay in place.
 
 ## Out of scope
 
-Voice, keelops.au CTA, pricing, MX/NS edits, real Motion OAuth until secrets exist.
+Voice, keelops.au CTA, pricing UI/tiers, MX/NS edits, Cal.com/Google, real Motion calls without a secret.

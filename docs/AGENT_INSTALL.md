@@ -4,7 +4,7 @@ Keel public line: **Make work move.** Site: https://keelops.au
 
 > If I'm going to have to talk to a clearly AI voice bot, why bother talking… just get your agents to do the talking.
 
-That is the product. **Agent schedules with agent.** Skip the fake human middleman. There is no voice path in v0. Do not sell AI.
+That is the product. **Agent schedules with agent.** Skip the fake human middleman. There is no voice path in v0. Do not sell AI. Named host: https://a2a.keelops.au. Next calendar: Motion.
 
 ## Discover
 

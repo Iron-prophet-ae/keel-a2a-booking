@@ -6,13 +6,15 @@ Keel public line: **Make work move.** Site: [keelops.au](https://keelops.au).
 
 That is the product. **Agent schedules with agent.** This desk is not a nicer receptionist and there is no voice path in v0.
 
+Named host: **https://a2a.keelops.au**. Calendar next: **Motion** (not Cal.com or Google unless Motion is blocked on secrets). Money direction only — cheap easy fix, one-time about $5, volume play. No packages, no pricing UI.
+
 A visiting agent talks to Keel’s booking desk over HTTP JSON (`keel-a2a/0.1`):
 
 **handshake → intake → propose slots → confirm → status**
 
 A confirmed booking **holds a time**. A person at Keel still decides pay, send, sign, and lodge.
 
-This repo does not sell a product, does not sell AI, and does not quote prices.
+This repo does not sell AI and does not invent packages or legal claims.
 
 ## What shipped
 
@@ -152,7 +154,7 @@ Auth is `X-Api-Key`: one `KEEL_A2A_API_KEY`, or any key in `KEEL_A2A_API_KEYS` /
 
 Default is `MockCalendarAdapter`: weekday 09:00–16:00 (Sydney hours for the demo).
 
-`CALENDAR_PROVIDER=motion|calcom` loads a stub that **fails loud** without `MOTION_API_KEY` / `CALCOM_API_KEY`. Do not invent those tokens. See `DEPLOY.md` for the human steps. Motion / Cal.com OAuth stays out of scope until secrets exist. Do not change [keelops.au](https://keelops.au).
+Calendar is **Motion first**. `CALENDAR_PROVIDER=motion` fails loud without `MOTION_API_KEY`. Do not invent a token. Do not wire Cal.com or Google unless Motion is blocked. Exact human steps: `DEPLOY.md`. Do not change [keelops.au](https://keelops.au).
 
 ## Tests
 

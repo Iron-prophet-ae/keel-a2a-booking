@@ -8,6 +8,8 @@ Keel public line: **Make work move.** Site: https://keelops.au
 
 A2A is the product. Not a nicer receptionist. No voice path in v0. Skip the fake human middleman: agent schedules with agent.
 
+Named host: https://a2a.keelops.au. Next calendar: Motion. Do not quote packages or tiers.
+
 ## What this desk does
 
 Talks to a visiting agent over HTTP JSON (`keel-a2a/0.1`):
@@ -22,7 +24,7 @@ Talks to a visiting agent over HTTP JSON (`keel-a2a/0.1`):
 
 - Voice / phone
 - Sell AI or software
-- Quote prices or legal terms
+- Invent packages, tiers, or legal terms
 - Invent availability
 - Decide pay, send, sign, or lodge — a person at Keel still does that
 
