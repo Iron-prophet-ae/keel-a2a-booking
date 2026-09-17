@@ -8,3 +8,4 @@ coverage
 *.log
 .vite
 .turbo
+artifacts/*.tar.gz
