@@ -20,19 +20,33 @@ Money direction (not a SKU, no pricing UI): cheap easy fix, one-time about $5, v
 
 `KEEL_A2A_API_KEY` is read from env. If missing, the process generates one and writes it to `KEEL_A2A_KEY_FILE` (default `.data/keel-api-key`). Never commit that file or `.env`.
 
-## Vercel (Iron Bars box — `npx vercel whoami` = simonhand-8259)
+## Vercel (project `keel-a2a-booking`, domain `a2a.keelops.au`)
 
-From a clone of this repo on your box:
+The Vercel project is `keel-a2a-booking`. The public domain is `a2a.keelops.au`. Squarespace needs one CNAME: host `a2a` → `cname.vercel-dns.com`. Leave apex MX/TXT and nameservers alone.
+
+From a clone of this repo:
 
 ```bash
-git clone https://github.com/Client-Care/keel-a2a-booking.git
+git clone https://github.com/Iron-prophet-ae/keel-a2a-booking.git
 cd keel-a2a-booking
 npx vercel --prod
 npx vercel env add KEEL_A2A_API_KEY
 npx vercel domains add a2a.keelops.au
 ```
 
-Start command if Vercel asks: `npm start` (`tsx src/index.ts`). The `api/index.ts` handler covers the serverless path. Set `CALENDAR_PROVIDER=mock` until Motion secrets exist. Memory is per-isolate on Vercel — Fly/Docker is the always-on process if you need sticky in-memory bookings.
+`api/index.ts` must stay a Web Handler `fetch` export. Vercel Node (Fluid) calls that `fetch`. Do not switch it back to `export default handle(app)` from `hono/vercel`: that throws `TypeError: this.raw.headers.get is not a function`, and Vercel ignores a Response returned from a default `(req, res)` export.
+
+```ts
+export default {
+  async fetch(request: Request): Promise<Response> {
+    return app.fetch(request);
+  },
+};
+```
+
+`vercel.json` stays at `$schema`, `"framework": null`, and the single rewrite `/(.*) -> /api`. Do not put top-level `installCommand` or `buildCommand` back — they break Vercel's services detection.
+
+Set `CALENDAR_PROVIDER=mock` until Motion secrets exist. Memory is per-isolate on Vercel — Fly/Docker is the always-on process if you need sticky in-memory bookings.
 
 ## Fly (always-on process)
 
@@ -47,20 +61,20 @@ fly deploy
 fly certs add a2a.keelops.au
 ```
 
-Until then the intended app hostname is `https://keel-a2a-booking.fly.dev`. After the Squarespace row + cert: `https://a2a.keelops.au`.
+Until then the intended Fly hostname is `https://keel-a2a-booking.fly.dev`. The public name `https://a2a.keelops.au` is the Vercel project (`keel-a2a-booking`), not this Fly app.
 
 ## Squarespace DNS — exact row for Iron Prophet
 
-Add **one** record. Leave `@`, MX, TXT (mail), and nameservers untouched.
+Add **one** record for the Vercel project `keel-a2a-booking` (domain `a2a.keelops.au`). Leave `@`, MX, TXT (mail), and nameservers untouched.
 
 | Field | Value |
 | --- | --- |
 | Type | `CNAME` |
 | Host | `a2a` |
-| Data | `keel-a2a-booking.fly.dev` |
+| Data | `cname.vercel-dns.com` |
 | TTL | Squarespace default (often 4 hours) |
 
-In Fly: add custom domain `a2a.keelops.au` and wait for HTTPS.
+That CNAME is required for `a2a.keelops.au` on Vercel. Point it at `keel-a2a-booking.fly.dev` only if the hostname is moved off Vercel, then add the custom domain in Fly and wait for HTTPS.
 
 VPS fallback only if Fly is unavailable: Type `A`, Host `a2a`, Data `<VPS IPv4>`.
 
