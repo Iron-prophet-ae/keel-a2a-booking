@@ -52,12 +52,12 @@ export class MemoryStore {
     return session;
   }
 
-  getSession(id: string): SessionRecord | undefined {
+  getSession(id: string, now = new Date()): SessionRecord | undefined {
     const session = this.sessions.get(id);
     if (!session) {
       return undefined;
     }
-    if (Date.parse(session.expiresAt) <= Date.now()) {
+    if (Date.parse(session.expiresAt) <= now.getTime()) {
       this.sessions.delete(id);
       return undefined;
     }

@@ -41,7 +41,7 @@ v1.post("/handshake", zValidator("json", handshakeRequestSchema), (c) => {
 
 v1.post("/intake", zValidator("json", intakeRequestSchema), (c) => {
   const body = c.req.valid("json");
-  requireSession(c.get("store"), body.session_id);
+  requireSession(c.get("store"), body.session_id, c.get("now"));
   const intake = c.get("store").putIntake({
     id: createId("intake"),
     sessionId: body.session_id,
@@ -64,7 +64,7 @@ v1.post("/intake", zValidator("json", intakeRequestSchema), (c) => {
 
 v1.post("/slots/propose", zValidator("json", proposeSlotsRequestSchema), async (c) => {
   const body = c.req.valid("json");
-  requireSession(c.get("store"), body.session_id);
+  requireSession(c.get("store"), body.session_id, c.get("now"));
   const intake = resolveIntake(c.get("store"), body.session_id);
   const slots = await c.get("calendar").propose({
     timezone: intake.timezone,
@@ -89,7 +89,7 @@ v1.post(
   zValidator("json", confirmBookingRequestSchema),
   async (c) => {
     const body = c.req.valid("json");
-    requireSession(c.get("store"), body.session_id);
+    requireSession(c.get("store"), body.session_id, c.get("now"));
     const intake = resolveIntake(c.get("store"), body.session_id);
 
     let reserved;
@@ -135,8 +135,8 @@ v1.get("/bookings/:id", (c) => {
   return c.json(response);
 });
 
-function requireSession(store: MemoryStore, sessionId: string) {
-  const session = store.getSession(sessionId);
+function requireSession(store: MemoryStore, sessionId: string, now: Date) {
+  const session = store.getSession(sessionId, now);
   if (!session) {
     throw new ApiError(
       401,
